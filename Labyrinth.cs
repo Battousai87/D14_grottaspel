@@ -7,7 +7,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media;
 
 namespace D14_grottaspel
-{
+{   
+    //testing testing
     public class RoomState
     {
         public int self;
@@ -24,74 +25,93 @@ namespace D14_grottaspel
             this.next = next;
         }
     }
-    public class Directions
+    public class Dirs
     {
+        public static int NoDoor = 997;
         public int north, east, south, west;
-        public Directions(int N, int E, int S, int W)
+        public Dirs(int N, int E, int S, int W)
         {
             north = N; east = E; south = S; west = W;
         }
     }
     public class Room
     {
-        public static int NoDoor = -997;
+        
         public int self;
         public string title;
         public string text;
         public string image;
         public List<RoomState> state;
         public int situation;
-        int north, east, south, west;
-        public Room(int self, string name, string text, string image, int N, int E, int S, int W, List<RoomState> state)
+        public Dirs directions;
+        //int north, east, south, west;
+        public Room(int self, string name, string text, string image, Dirs dirs, List<RoomState> state)
         {
             this.self = self; this.title = name; this.text = text; this.image = image;
             // TODO: since all four directions makes the constructor ugly, class Directions should replace this:
-            north = N; east = E; south = S; west = W;
+            this.directions = dirs;
+            //north = N; east = E; south = S; west = W;
             // TODO: the plan is to make the state[situation] responsible for drawing the room
             this.state = state;
             this.situation = 0;
         }
         public string Title { get { return title; } }
         public string Text { get { return text; } }
-        public int North { get { return north; } }
-        public int East { get { return east; } }
-        public int South { get { return south; } }
-        public int West { get { return west; } }
+        public int North { get { return directions.north; } }
+        public int East { get { return directions.east; } }
+        public int South { get { return directions.south; } }
+        public int West { get { return directions.west; } }
         public string Directions
         {
             get
             {
                 string dir = "Det går dörrar till:\n";
-                if (north != NoDoor)
+                if (directions.north != Dirs.NoDoor)
                 {
                     dir += "  w - norr";
-                    if (north < 0) dir += " (stängd)"; dir += "\n";
+                    if (directions.north < 0) dir += " (stängd)"; dir += "\n";
                 }
-                if (east != NoDoor)
+                if (directions.east != Dirs.NoDoor)
                 {
                     dir += "  d - öster";
-                    if (east < 0) dir += " (stängd)"; dir += "\n";
+                    if (directions.east < 0) dir += " (stängd)"; dir += "\n";
                 }
-                if (south != NoDoor)
+                if (directions.south != Dirs.NoDoor)
                 {
                     dir += "  s - söder";
-                    if (south < 0) dir += " (stängd)"; dir += "\n";
+                    if (directions.south < 0) dir += " (stängd)"; dir += "\n";
                 }
-                if (west != NoDoor)
+                if (directions.west != Dirs.NoDoor)
                 {
                     dir += "  a - väster";
-                    if (west < 0) dir += " (stängd)"; dir += "\n";
+                    if (directions.west < 0) dir += " (stängd)"; dir += "\n";
                 }
                 return dir;
             }
         }
-        public string Image { get { return image; } }
+        public string Image { 
+            get {
+                if (state.Count > 0)
+                    return state[situation].image;
+                else
+                    return image; 
+            } 
+        }
         public void UnLock()
         {
-            if (north != NoDoor && north < 0) north = -north;
-            if (south != NoDoor && south < 0) south = -south;
-            if (east != NoDoor && east < 0) east = -east;
-            if (west != NoDoor && west < 0) west = -west;
+            if (directions.north < 0) directions.north = -directions.north;
+            if (directions.south < 0) directions.south = -directions.south;
+            if (directions.east < 0) directions.east = -directions.east;
+            if (directions.west < 0) directions.west = -directions.west;
+        }
+
+        public string ChangeStatus(string command)
+        {
+            if (state[situation].trigger == command)
+                situation = state[situation].next;
+            
+            return state[situation].name;
+
         }
     }
     public class Labyrinth
@@ -109,7 +129,10 @@ namespace D14_grottaspel
                "  h - hjälp\n" +
                "  z - avsluta\n",
                "key-found.png",
-               Room.NoDoor, Room.NoDoor, Room.NoDoor, Room.NoDoor, new List<RoomState>());
+               new Dirs(Dirs.NoDoor, Dirs.NoDoor, Dirs.NoDoor, Dirs.NoDoor), new List<RoomState>() {
+                    new RoomState(0,"help", "key-found.png", "l", 0),
+               });
+
         static List<Room> labyrinth = new List<Room>() {
             new Room(0, "Start",
                 "Du står i ett rum med rött\n" +
@@ -117,7 +140,7 @@ namespace D14_grottaspel
                 "facklornas sken. Du ser en\n" +
                 "hög med tyg nere till vänster. ",
                 "z-ingang-stangd-m-brate.png",
-                N:-3, E:Room.NoDoor, S:Room.NoDoor, W:Room.NoDoor,
+                new Dirs(N:-3, E:Dirs.NoDoor, S:Dirs.NoDoor, W:Dirs.NoDoor),
                 new List<RoomState>() {
                     new RoomState(0,"dörren är låst, skräp till\nvänster", "z-ingang-stangd-m-brate.png", "l", 1),
                     new RoomState(1,"dörren är låst", "z-ingang-stangd.png", "o", 2),
@@ -129,60 +152,75 @@ namespace D14_grottaspel
                 "framåt. Du ser en hög med\n" +
                 "skräp nere till vänster.",
                 "z-lagerrum-vast.png",
-                N:Room.NoDoor, E:2, S:Room.NoDoor, W:Room.NoDoor,
-                new List<RoomState>()),
+                new Dirs(N:Dirs.NoDoor, E:2, S:Dirs.NoDoor, W:Dirs.NoDoor),
+                new List<RoomState>(){
+                    new RoomState(0,"skräp nere till vänster", "z-lagerrum-vast.png", "l", 1),
+                    new RoomState(1,"rummet är tomt", "room-001.png", "o", 1),
+                }),
             new Room(2, "Vaktrum väst",
                 "Du står i ett övergivet vaktrum.",
                 "z-vaktrum-vast.png",
-                N:Room.NoDoor, E: 3, S:Room.NoDoor, W:1,
+                new Dirs(N:Dirs.NoDoor, E: 3, S:Dirs.NoDoor, W:1),
                 new List<RoomState>()),
             new Room(3, "Korsvägen",
                 "Du står i korsväg. Det går\n" +
                 "gångar i alla riktningar.",
                 "z-korsvag-stangt-v-e.png",
-                N:6, E:4, S:0, W:2,
+                new Dirs(N:6, E:4, S:0, W:2),
                 new List<RoomState>() {
-                    new RoomState(0,"dörrarna är låsta", "z-korsvag-stangt-v-e.pngg", "o", 1),
+                    new RoomState(0,"dörrarna är låsta", "z-korsvag-stangt-v-e.png", "o", 1),
                     new RoomState(1,"dörren är låst", "z-korsvag-stangt-v.png", "o", 2),
                     new RoomState(2,"dörren är öppen", "z-korsvag-oppet.png", "s", 2)
                 }),
             new Room(4, "Vaktrum öst",
                 "Du står i ett övergivet vaktrum.",
                 "z-vaktrum-ost-m-kista.png",
-                N:Room.NoDoor, E:5, S:Room.NoDoor, W:3,
-                new List<RoomState>()),
+                new Dirs(N:Dirs.NoDoor, E:5, S:Dirs.NoDoor, W:3),
+                new List<RoomState>() {
+                    new RoomState(0,"en kista i rummet", "z-vaktrum-ost-m-kista.png", "o", 0),
+
+                }),
             new Room(5, "Lagerrum öst",
                 "Du står i ett rum utan vägar\n" +
                 "framåt. Du ser en hög med\n" +
                 "skräp nere till vänster.",
                 "z-lagerrum-ost.png",
-                N:7, E:Room.NoDoor, S:Room.NoDoor, W:4,
-                new List<RoomState>()),
+                new Dirs(N:7, E:Dirs.NoDoor, S:Dirs.NoDoor, W:4),
+                new List<RoomState>(){
+                    new RoomState(0,"skräp nere till höger", "z-lagerrum-ost.png", "l", 0),
+                }),
             new Room(6, "Bron",
                 "Du står vid en bro, som\n" +
                 "går över en hög klyfta, som\n" +
                 "du inte ser botten på.",
                 "z-bro.png",
-                N:8, E:Room.NoDoor, S:3, W:Room.NoDoor,
-                new List<RoomState>()),
+                new Dirs(N:8, E:Dirs.NoDoor, S:3, W:Dirs.NoDoor),
+                new List<RoomState>() {
+                    new RoomState(0,"bro", "z-bro.png", "l", 0),
+                }),
             new Room(7, "Inre rummet",
                 "Du står i ett rum med\n" +
                 "bråte överallt.",
                 "z-inre-rum-ost-m-brate.png",
-                N:Room.NoDoor, E:Room.NoDoor, S:5, W:Room.NoDoor,
-                new List<RoomState>()),
+                new Dirs(N:Dirs.NoDoor, E:Dirs.NoDoor, S:5, W:Dirs.NoDoor),
+                new List<RoomState>(){
+                    new RoomState(0,"bråte överallt.", "z-inre-rum-ost-m-brate.png", "l", 0),
+                }),
             new Room(8, "Bortre rummet",
                 "Du står i ett rum med\n" +
                 "en kista i högra hörnet.",
                 "z-nordrum-stängd-m-kista.png",
-                N:Room.NoDoor, E:Room.NoDoor, S:6, W:-9,
-                new List<RoomState>()),
+                new Dirs(N:Dirs.NoDoor, E:Dirs.NoDoor, S:6, W:-9),
+                new List<RoomState>(){
+                    new RoomState(0,"en kista i högra hörnet.", "z-nordrum-stängd-m-kista.png", "l", 0),
+                }),
             new Room(9, "Magiskt rum",
                 "Du står i ett rum där en\n" +
                 "magiker kastar en trollformel.",
                 "z-trollisrum-m-trollis-2.png",
-                N:Room.NoDoor, E:0, S:Room.NoDoor, W:Room.NoDoor,
-                new List<RoomState>())
+                new Dirs(N:Dirs.NoDoor, E:0, S:Dirs.NoDoor, W:Dirs.NoDoor),
+                new List<RoomState>() { new RoomState(0, "magiker kastar en trollformel.", "z-trollisrum-m-trollis-2.png", "l", 0), 
+                })
         };
         static int current = 0;
         public static string HelpTitle() { return help.Title; }
@@ -195,7 +233,7 @@ namespace D14_grottaspel
                 int next = labyrinth[current].North;
                 // TBD: bryt ut en static-metod
                 warning = "";
-                if (next == Room.NoDoor) warning = "du gick in i väggen!\n";
+                if (next == Dirs.NoDoor) warning = "du gick in i väggen!\n";
                 else if (next < 0) warning = "du gick in i en låst dörr!\n";
                 else if (next >= labyrinth.Count) warning = "det känns som om du svävar\npå moln!\n";
                 else current = next;
@@ -204,7 +242,7 @@ namespace D14_grottaspel
             {
                 int next = labyrinth[current].South;
                 warning = "";
-                if (next == Room.NoDoor) warning = "du gick in i väggen!\n";
+                if (next == Dirs.NoDoor) warning = "du gick in i väggen!\n";
                 else if (next < 0) warning = "du gick in i en låst dörr!\n";
                 else if (next >= labyrinth.Count) warning = "det känns som om du svävar\npå moln!\n";
                 else current = next;
@@ -213,7 +251,7 @@ namespace D14_grottaspel
             {
                 int next = labyrinth[current].East;
                 warning = "";
-                if (next == Room.NoDoor) warning = "du gick in i väggen!\n";
+                if (next == Dirs.NoDoor) warning = "du gick in i väggen!\n";
                 else if (next < 0) warning = "du gick in i en låst dörr!\n";
                 else if (next >= labyrinth.Count) warning = "det känns som om du svävar\npå moln!\n";
                 else current = next;
@@ -222,18 +260,23 @@ namespace D14_grottaspel
             {
                 int next = labyrinth[current].West;
                 warning = "";
-                if (next == Room.NoDoor) warning = "du gick in i väggen!\n";
+                if (next == Dirs.NoDoor) warning = "du gick in i väggen!\n";
                 else if (next < 0) warning = "du gick in i en låst dörr!\n";
                 else if (next >= labyrinth.Count) warning = "det känns som om du svävar\npå moln!\n";
                 else current = next;
             }
             else if (command == "l")
             {
+                string update = labyrinth[current].ChangeStatus(command);
                 warning = "du hittade ingenting\n";
             }
             else if (command == "o")
             {
+                string update = labyrinth[current].ChangeStatus(command);
                 labyrinth[current].UnLock();
+                warning = "alla dörrar som kan låsas upp\n" +
+                    "låstes upp!\n";
+
             }
             else if (command == "p")
             {
